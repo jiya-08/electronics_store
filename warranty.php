@@ -182,7 +182,7 @@ async function handleWarrantySearch(e) {
     btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Checking...';
 
     try {
-        const res = await fetch(`/electronics_store/api/warranty.php?query=${encodeURIComponent(query)}`);
+        const res = await fetch(`${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/warranty.php?query=${encodeURIComponent(query)}`);
         const result = await res.json();
 
         container.classList.remove('hidden');
@@ -349,7 +349,7 @@ async function handleWarrantyRegistration(e) {
     };
 
     try {
-        const res = await fetch('/electronics_store/api/warranty.php', {
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/warranty.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -383,3 +383,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+

@@ -166,7 +166,7 @@ async function renderMatrix() {
     content.classList.add('hidden');
 
     try {
-        const res = await fetch(`/electronics_store/api/compare.php?ids=${currentProductIds.join(',')}`);
+        const res = await fetch(`${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/compare.php?ids=${currentProductIds.join(',')}`);
         const result = await res.json();
 
         if (!result.success || !result.data || !result.data.products) {
@@ -328,3 +328,4 @@ document.addEventListener('DOMContentLoaded', initComparison);
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+

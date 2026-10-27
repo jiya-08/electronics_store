@@ -177,7 +177,7 @@ async function loadProducts() {
     if (maxPriceVal) params.append('max_price', maxPriceVal);
 
     try {
-        const res = await fetch(`/electronics_store/api/products.php?${params.toString()}`);
+        const res = await fetch(`${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/products.php?${params.toString()}`);
         const data = await res.json();
 
         if (data.success && data.data && data.data.products) {
@@ -291,3 +291,4 @@ document.addEventListener('DOMContentLoaded', loadProducts);
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+

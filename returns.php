@@ -174,8 +174,8 @@ async function handleTrackRma(e) {
 
     const isRma = query.toUpperCase().startsWith('RMA');
     const url = isRma 
-        ? `/electronics_store/api/returns.php?rma=${encodeURIComponent(query)}`
-        : `/electronics_store/api/returns.php?order=${encodeURIComponent(query)}`;
+        ? `${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/returns.php?rma=${encodeURIComponent(query)}`
+        : `${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/returns.php?order=${encodeURIComponent(query)}`;
 
     try {
         const res = await fetch(url);
@@ -340,7 +340,7 @@ async function handleSubmitRma(e) {
     };
 
     try {
-        const res = await fetch('/electronics_store/api/returns.php', {
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/returns.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -372,3 +372,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+

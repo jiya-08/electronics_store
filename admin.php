@@ -464,7 +464,7 @@ function refreshCurrentAdminTab() {
 // 1. Analytics Loader
 async function loadAnalytics() {
     try {
-        const res = await fetch('/electronics_store/api/analytics.php');
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/analytics.php');
         const result = await res.json();
         if (!result.success) return;
 
@@ -560,7 +560,7 @@ async function loadAnalytics() {
 // 2. Inventory & Stock Loader
 async function loadInventory() {
     try {
-        const res = await fetch('/electronics_store/api/stock.php');
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/stock.php');
         const result = await res.json();
         if (!result.success) return;
 
@@ -679,11 +679,11 @@ async function loadSerials() {
 
     try {
         // We can query database for serials
-        const res = await fetch(`/electronics_store/api/stock.php`);
+        const res = await fetch(`${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/stock.php`);
         const result = await res.json();
         
         // Fetch serials direct via query
-        const serialRes = await fetch(`/electronics_store/api/warranty.php`);
+        const serialRes = await fetch(`${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/warranty.php`);
         const warResult = await serialRes.json();
 
         // Render serial table using serial stats and warranties
@@ -714,7 +714,7 @@ async function loadAdminReturns() {
     body.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-400">Loading RMA requests...</td></tr>';
 
     try {
-        const url = `/electronics_store/api/returns.php${status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''}`;
+        const url = `${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/returns.php${status !== 'all' ? `?status=${encodeURIComponent(status)}` : ''}`;
         const res = await fetch(url);
         const result = await res.json();
         if (!result.success) return;
@@ -765,7 +765,7 @@ async function loadAdminInvoices() {
     body.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-400">Loading invoices...</td></tr>';
 
     try {
-        const res = await fetch('/electronics_store/api/invoices.php');
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/invoices.php');
         const result = await res.json();
         if (!result.success) return;
 
@@ -841,7 +841,7 @@ async function handleRestockSubmit(e) {
     };
 
     try {
-        const res = await fetch('/electronics_store/api/stock.php?action=restock', {
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/stock.php?action=restock', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -887,7 +887,7 @@ async function handleUpdateRmaSubmit(e) {
     };
 
     try {
-        const res = await fetch('/electronics_store/api/returns.php?action=update_status', {
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/returns.php?action=update_status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -915,3 +915,4 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+

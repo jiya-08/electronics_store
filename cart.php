@@ -250,7 +250,7 @@ async function loadCart() {
     successView.classList.add('hidden');
 
     try {
-        const res = await fetch('/electronics_store/api/cart.php', {
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/cart.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ items: cart })
@@ -364,7 +364,7 @@ async function handleCheckout(event) {
     };
 
     try {
-        const res = await fetch('/electronics_store/api/checkout.php', {
+        const res = await fetch('${(window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : ''))}/api/checkout.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -430,3 +430,4 @@ document.addEventListener('DOMContentLoaded', loadCart);
 </script>
 
 <?php require_once __DIR__ . '/includes/footer.php'; ?>
+

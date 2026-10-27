@@ -4,31 +4,79 @@ require_once __DIR__ . '/config.php';
 function get_db_connection() {
     static $pdo = null;
     if ($pdo === null) {
-        $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
         $options = [
             PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
             PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             PDO::ATTR_EMULATE_PREPARES   => false,
         ];
-        try {
-            $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-        } catch (PDOException $e) {
-            // Check if database doesn't exist, try to connect without dbname and create it
-            if ($e->getCode() == 1049) {
-                try {
-                    $initDsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";charset=utf8mb4";
-                    $tmpPdo = new PDO($initDsn, DB_USER, DB_PASS, $options);
-                    $tmpPdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
-                    $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
-                } catch (Exception $inner) {
-                    die("Database connection failed: " . $inner->getMessage());
+
+        // 1. Try MySQL connection if configured or locally running
+        $isVercel = !empty($_ENV['VERCEL']) || !empty($_SERVER['VERCEL']);
+        $hasCustomHost = !empty(getenv('DB_HOST')) || !empty(getenv('MYSQL_HOST'));
+
+        if (!$isVercel || $hasCustomHost) {
+            $dsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";dbname=" . DB_NAME . ";charset=utf8mb4";
+            try {
+                $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+                return $pdo;
+            } catch (PDOException $e) {
+                // Try to create DB if missing
+                if ($e->getCode() == 1049) {
+                    try {
+                        $initDsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";charset=utf8mb4";
+                        $tmpPdo = new PDO($initDsn, DB_USER, DB_PASS, $options);
+                        $tmpPdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;");
+                        $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
+                        return $pdo;
+                    } catch (Exception $inner) {}
                 }
-            } else {
-                die("Database connection error: " . $e->getMessage());
             }
+        }
+
+        // 2. Fallback to SQLite (Essential for Vercel Serverless without remote MySQL)
+        try {
+            $sqlitePath = is_writable('/tmp') ? '/tmp/electronics_store.sqlite' : __DIR__ . '/../database/electronics_store.sqlite';
+            $isNewDb = !file_exists($sqlitePath);
+            $pdo = new PDO("sqlite:" . $sqlitePath, null, null, $options);
+            
+            if ($isNewDb || filesize($sqlitePath) < 1000) {
+                init_sqlite_schema($pdo);
+            }
+        } catch (Exception $sqliteErr) {
+            die("Database initialization error: " . $sqliteErr->getMessage());
         }
     }
     return $pdo;
+}
+
+function init_sqlite_schema($pdo) {
+    // Read schema & seed files, convert MySQL specific syntax for SQLite
+    $schemaFile = __DIR__ . '/../database/schema.sql';
+    $seedFile = __DIR__ . '/../database/seed.sql';
+    if (file_exists($schemaFile) && file_exists($seedFile)) {
+        $sql = file_get_contents($schemaFile) . "\n" . file_get_contents($seedFile);
+        
+        // Clean MySQL specific keywords for SQLite compatibility
+        $sql = preg_replace('/CREATE DATABASE[^;]+;/i', '', $sql);
+        $sql = preg_replace('/USE[^;]+;/i', '', $sql);
+        $sql = preg_replace('/ENGINE=InnoDB[^;]*/i', '', $sql);
+        $sql = preg_replace('/DEFAULT CHARSET=[^;]*/i', '', $sql);
+        $sql = preg_replace('/CHARACTER SET [^ ]+/i', '', $sql);
+        $sql = preg_replace('/COLLATE [^ ;]+/i', '', $sql);
+        $sql = preg_replace('/SET FOREIGN_KEY_CHECKS[^;]+;/i', '', $sql);
+        $sql = preg_replace('/INT AUTO_INCREMENT PRIMARY KEY/i', 'INTEGER PRIMARY KEY AUTOINCREMENT', $sql);
+        $sql = str_ireplace('NOW()', "datetime('now')", $sql);
+        $sql = str_ireplace('CURDATE()', "date('now')", $sql);
+
+        $queries = array_filter(array_map('trim', explode(';', $sql)));
+        foreach ($queries as $q) {
+            if (!empty($q)) {
+                try {
+                    $pdo->exec($q);
+                } catch (Exception $e) {}
+            }
+        }
+    }
 }
 
 function json_response($data, $statusCode = 200) {

@@ -44,6 +44,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>window.APP_BASE_URL = '<?php echo BASE_URL; ?>';</script>
     <!-- Custom CSS -->
     <link rel="stylesheet" href="<?php echo BASE_URL; ?>/assets/css/style.css">
 </head>
@@ -163,3 +164,4 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
             menu.classList.toggle('hidden');
         });
     </script>
+

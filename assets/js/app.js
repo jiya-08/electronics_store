@@ -178,7 +178,7 @@ const App = {
     // Stock alert poll for header/admin
     async checkLowStockAlerts() {
         try {
-            const res = await fetch('/electronics_store/api/stock.php');
+            const res = await fetch(((window.APP_BASE_URL !== undefined ? window.APP_BASE_URL : (window.location.pathname.startsWith('/electronics_store') ? '/electronics_store' : '')) + '/api/stock.php'));
             const data = await res.json();
             if (data.success && data.data) {
                 const count = data.data.low_stock_count;
@@ -245,3 +245,4 @@ const App = {
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
 });
+
