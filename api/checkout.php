@@ -48,7 +48,9 @@ try {
     // Fetch product data and check stocks with lock
     $pIds = array_keys($itemQuantities);
     $placeholders = implode(',', array_fill(0, count($pIds), '?'));
-    $stmt = $pdo->prepare("SELECT * FROM products WHERE id IN ($placeholders) FOR UPDATE");
+    $isSqlite = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === "sqlite");
+    $lockSuffix = $isSqlite ? "" : " FOR UPDATE";
+    $stmt = $pdo->prepare("SELECT * FROM products WHERE id IN ($placeholders)" . $lockSuffix);
     $stmt->execute($pIds);
     $products = $stmt->fetchAll();
 
@@ -257,3 +259,4 @@ try {
     json_error("Failed to complete checkout: " . $e->getMessage(), 500);
 }
 ?>
+

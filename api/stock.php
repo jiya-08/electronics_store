@@ -94,7 +94,9 @@ if ($method === 'POST') {
             $pdo->beginTransaction();
 
             // Lock product row
-            $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ? FOR UPDATE");
+            $isSqlite = ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === "sqlite");
+            $lockSuffix = $isSqlite ? "" : " FOR UPDATE";
+            $stmt = $pdo->prepare("SELECT * FROM products WHERE id = ?" . $lockSuffix);
             $stmt->execute([$productId]);
             $prod = $stmt->fetch();
 
@@ -136,7 +138,7 @@ if ($method === 'POST') {
                 $sInsert = $pdo->prepare("
                     INSERT INTO product_serials (product_id, serial_number, status, created_at)
                     VALUES (?, ?, 'in_stock', NOW())
-                    ON DUPLICATE KEY UPDATE status = 'in_stock'
+                    $isSqlite ? "ON CONFLICT(serial_number) DO UPDATE SET status = 'in_stock'" : "ON DUPLICATE KEY UPDATE status = 'in_stock'"
                 ");
 
                 foreach ($serialList as $sNum) {
@@ -185,3 +187,4 @@ if ($method === 'POST') {
 
 json_error("Method not allowed", 405);
 ?>
+

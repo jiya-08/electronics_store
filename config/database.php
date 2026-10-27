@@ -10,8 +10,8 @@ function get_db_connection() {
             PDO::ATTR_EMULATE_PREPARES   => false,
         ];
 
-        // 1. Try MySQL connection if configured or locally running
-        $isVercel = !empty($_ENV['VERCEL']) || !empty($_SERVER['VERCEL']);
+        // 1. Try MySQL connection if remote DB credentials provided or running on localhost MySQL
+        $isVercel = !empty($_ENV['VERCEL']) || !empty($_SERVER['VERCEL']) || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'vercel.app') !== false);
         $hasCustomHost = !empty(getenv('DB_HOST')) || !empty(getenv('MYSQL_HOST'));
 
         if (!$isVercel || $hasCustomHost) {
@@ -20,7 +20,7 @@ function get_db_connection() {
                 $pdo = new PDO($dsn, DB_USER, DB_PASS, $options);
                 return $pdo;
             } catch (PDOException $e) {
-                // Try to create DB if missing
+                // If on local development and DB is missing, create it
                 if ($e->getCode() == 1049) {
                     try {
                         $initDsn = "mysql:host=" . DB_HOST . ";port=" . DB_PORT . ";charset=utf8mb4";
@@ -33,50 +33,29 @@ function get_db_connection() {
             }
         }
 
-        // 2. Fallback to SQLite (Essential for Vercel Serverless without remote MySQL)
+        // 2. Bundled SQLite Database (Zero-config Vercel Serverless deployment)
         try {
-            $sqlitePath = is_writable('/tmp') ? '/tmp/electronics_store.sqlite' : __DIR__ . '/../database/electronics_store.sqlite';
-            $isNewDb = !file_exists($sqlitePath);
-            $pdo = new PDO("sqlite:" . $sqlitePath, null, null, $options);
-            
-            if ($isNewDb || filesize($sqlitePath) < 1000) {
-                init_sqlite_schema($pdo);
+            $bundledSqlite = __DIR__ . '/../database/electronics_store.sqlite';
+            $runtimeSqlite = is_writable('/tmp') ? '/tmp/electronics_store.sqlite' : $bundledSqlite;
+
+            if ($runtimeSqlite !== $bundledSqlite && file_exists($bundledSqlite)) {
+                if (!file_exists($runtimeSqlite) || filesize($runtimeSqlite) < 50000) {
+                    @copy($bundledSqlite, $runtimeSqlite);
+                }
             }
+
+            $targetPath = file_exists($runtimeSqlite) ? $runtimeSqlite : $bundledSqlite;
+            $pdo = new PDO("sqlite:" . $targetPath, null, null, $options);
+
+            // Register MySQL compatibility functions for SQLite
+            $pdo->sqliteCreateFunction('NOW', function() { return date('Y-m-d H:i:s'); });
+            $pdo->sqliteCreateFunction('CURDATE', function() { return date('Y-m-d'); });
+
         } catch (Exception $sqliteErr) {
-            die("Database initialization error: " . $sqliteErr->getMessage());
+            die("Database connection error: " . $sqliteErr->getMessage());
         }
     }
     return $pdo;
-}
-
-function init_sqlite_schema($pdo) {
-    // Read schema & seed files, convert MySQL specific syntax for SQLite
-    $schemaFile = __DIR__ . '/../database/schema.sql';
-    $seedFile = __DIR__ . '/../database/seed.sql';
-    if (file_exists($schemaFile) && file_exists($seedFile)) {
-        $sql = file_get_contents($schemaFile) . "\n" . file_get_contents($seedFile);
-        
-        // Clean MySQL specific keywords for SQLite compatibility
-        $sql = preg_replace('/CREATE DATABASE[^;]+;/i', '', $sql);
-        $sql = preg_replace('/USE[^;]+;/i', '', $sql);
-        $sql = preg_replace('/ENGINE=InnoDB[^;]*/i', '', $sql);
-        $sql = preg_replace('/DEFAULT CHARSET=[^;]*/i', '', $sql);
-        $sql = preg_replace('/CHARACTER SET [^ ]+/i', '', $sql);
-        $sql = preg_replace('/COLLATE [^ ;]+/i', '', $sql);
-        $sql = preg_replace('/SET FOREIGN_KEY_CHECKS[^;]+;/i', '', $sql);
-        $sql = preg_replace('/INT AUTO_INCREMENT PRIMARY KEY/i', 'INTEGER PRIMARY KEY AUTOINCREMENT', $sql);
-        $sql = str_ireplace('NOW()', "datetime('now')", $sql);
-        $sql = str_ireplace('CURDATE()', "date('now')", $sql);
-
-        $queries = array_filter(array_map('trim', explode(';', $sql)));
-        foreach ($queries as $q) {
-            if (!empty($q)) {
-                try {
-                    $pdo->exec($q);
-                } catch (Exception $e) {}
-            }
-        }
-    }
 }
 
 function json_response($data, $statusCode = 200) {

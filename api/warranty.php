@@ -155,7 +155,7 @@ if ($method === 'POST') {
     $ensureSerial = $pdo->prepare("
         INSERT INTO product_serials (product_id, serial_number, status, sold_at)
         VALUES (?, ?, 'sold', NOW())
-        ON DUPLICATE KEY UPDATE status = 'sold', sold_at = NOW()
+        ($pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === "sqlite" ? "ON CONFLICT(serial_number) DO UPDATE SET status = 'sold', sold_at = NOW()" : "ON DUPLICATE KEY UPDATE status = 'sold', sold_at = NOW()")
     ");
     $ensureSerial->execute([$productId, $serialNumber]);
 
@@ -174,3 +174,4 @@ if ($method === 'POST') {
 
 json_error("Method not allowed", 405);
 ?>
+
